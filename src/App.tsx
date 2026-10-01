@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 
 // --- Version Constants ---
-const APP_VERSION = "2.2.7";
+const APP_VERSION = "2.2.8";
 const LAST_UPDATE = "2026-10-05";
 const NEXT_VERSION = "2.3.0";
 
@@ -356,6 +356,15 @@ export default function App() {
         const parsed = JSON.parse(cat);
         if (parsed && parsed.incoming) setCategories(parsed);
       }
+      // FIX: Restore login session on refresh - v2.2.8
+      const sess = localStorage.getItem("cco_session_v2");
+      if (sess) {
+        const parsedSess = JSON.parse(sess);
+        if (parsedSess && parsedSess.id) {
+          setCurrentOfficer(parsedSess);
+          setSelectedLoginId(parsedSess.id);
+        }
+      }
     } catch (e) {
       console.warn("Load failed", e);
     }
@@ -377,6 +386,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("cco_categories_v2", JSON.stringify(categories));
   }, [categories]);
+  // FIX v2.2.8: Persist login session to survive refresh on GitHub Pages
+  useEffect(() => {
+    if (currentOfficer) {
+      localStorage.setItem("cco_session_v2", JSON.stringify(currentOfficer));
+    } else {
+      localStorage.removeItem("cco_session_v2");
+    }
+  }, [currentOfficer]);
 
   // --- ENTER KEY FIX - global listener for login ---
   useEffect(() => {
