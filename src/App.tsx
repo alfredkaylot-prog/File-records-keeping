@@ -231,8 +231,6 @@ export default function App() {
   const [filterIncomingStatus, setFilterIncomingStatus] = useState("All");
   const [filterOutgoingStatus, setFilterOutgoingStatus] = useState("All");
   const [activeTab, setActiveTab] = useState<"incoming" | "outgoing" | "officers" | "categories" | "audit" | "settings">("incoming");
-  // --- Action Taken expand fix v2.2.9 ---
-  const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
 
   // --- Modals ---
   const [showIncomingModal, setShowIncomingModal] = useState(false);
@@ -1172,22 +1170,19 @@ export default function App() {
                           <div className="text-[11px] text-gray-500">{r.date} • {r.category}</div>
                         </td>
                         <td className="px-4 py-3">{truncate(r.senderOrRecipient, 28)}</td>
-                        <td className="px-4 py-3 min-w-[320px] max-w-[420px]">
-                          <div 
-                            onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)}
-                            className={`text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2.5 cursor-pointer hover:bg-[#f3e9c8] transition-all ${expandedActionId === r.id ? '' : 'line-clamp-2'}`}
-                            title="Click to expand/collapse"
-                          >
-                            {r.actionTaken || <span className="text-gray-400 italic">No action yet - click Edit</span>}
-                          </div>
-                          {r.actionTaken && r.actionTaken.length > 80 && (
-                            <button type="button" onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)} className="text-[10px] text-[#0f2a44] underline mt-1 hover:text-[#c9a84c] cursor-pointer">
-                              {expandedActionId === r.id ? 'Show less ▲' : 'Show full ▼'}
-                            </button>
-                          )}
+                        <td className="px-4 py-3 max-w-[260px]">
+                          <div className="line-clamp-2 text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2">{r.actionTaken}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="px-2.5 py-1 rounded-full bg-[#0f2a44] text-white text-[10px] font-bold">{r.status}</span>
+                          <span className={`inline-flex whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-bold border ${
+                            r.status === 'Urgent' ? 'bg-red-100 text-red-800 border-red-200' :
+                            r.status === 'Pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                            r.status === 'In Progress' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                            r.status === 'Closed' ? 'bg-green-100 text-green-800 border-green-200' :
+                            r.status === 'Forwarded' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                            r.status === 'Filed' ? 'bg-gray-100 text-gray-700 border-gray-300' :
+                            'bg-[#0f2a44] text-white border-[#0f2a44]'
+                          }`}>{r.status}</span>
                         </td>
                         <td className="px-4 py-3">{r.assignedTo}</td>
                         <td className="px-4 py-3 text-right">
@@ -1278,22 +1273,19 @@ export default function App() {
                           <div className="text-[11px] text-gray-500">{r.date} • {r.category}</div>
                         </td>
                         <td className="px-4 py-3">{truncate(r.senderOrRecipient, 28)}</td>
-                        <td className="px-4 py-3 min-w-[320px] max-w-[420px]">
-                          <div 
-                            onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)}
-                            className={`text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2.5 cursor-pointer hover:bg-[#f3e9c8] transition-all ${expandedActionId === r.id ? '' : 'line-clamp-2'}`}
-                            title="Click to expand/collapse"
-                          >
-                            {r.actionTaken || <span className="text-gray-400 italic">No action yet</span>}
-                          </div>
-                          {r.actionTaken && r.actionTaken.length > 80 && (
-                            <button type="button" onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)} className="text-[10px] text-[#0f2a44] underline mt-1 hover:text-[#c9a84c] cursor-pointer">
-                              {expandedActionId === r.id ? 'Show less ▲' : 'Show full ▼'}
-                            </button>
-                          )}
+                        <td className="px-4 py-3 max-w-[260px]">
+                          <div className="line-clamp-2 text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2">{r.actionTaken}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="px-2.5 py-1 rounded-full bg-[#0f2a44] text-white text-[10px] font-bold">{r.status}</span>
+                          <span className={`inline-flex whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-bold border ${
+                            r.status === 'Urgent' ? 'bg-red-100 text-red-800 border-red-200' :
+                            r.status === 'Pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                            r.status === 'In Progress' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                            r.status === 'Closed' ? 'bg-green-100 text-green-800 border-green-200' :
+                            r.status === 'Forwarded' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                            r.status === 'Filed' ? 'bg-gray-100 text-gray-700 border-gray-300' :
+                            'bg-[#0f2a44] text-white border-[#0f2a44]'
+                          }`}>{r.status}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1.5">
@@ -1528,7 +1520,7 @@ export default function App() {
                     <button key={chip} type="button" onClick={()=>setIncomingForm(f=>({...f, actionTaken: f.actionTaken ? f.actionTaken + (f.actionTaken.endsWith('.')||f.actionTaken.endsWith(' ') ? ' ' : '. ') + chip : chip}))} className="px-2.5 py-1 rounded-full bg-[#fbf8ee] border text-[11px] hover:bg-[#f3e9c8] cursor-pointer">{chip}</button>
                   ))}
                 </div>
-                <textarea value={incomingForm.actionTaken} onChange={e=>setIncomingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveIncoming()}}} rows={6} className="mt-2 w-full px-3 py-3 rounded-xl border text-sm leading-relaxed focus:outline-none focus:border-[#c9a84c] min-h-[140px]" placeholder="Describe full actions taken on this file... Example: Received and logged. Forwarded to CCO for review. Document verified. Pending Director approval.\n\nEnter = new line, Ctrl+Enter = Save" />
+                <textarea value={incomingForm.actionTaken} onChange={e=>setIncomingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveIncoming()}}} rows={4} className="mt-2 w-full px-3 py-2 rounded-xl border text-sm leading-relaxed focus:outline-none focus:border-[#c9a84c]" placeholder="Describe actions taken... Enter for new line, Ctrl+Enter to save" />
               </div>
               <div>
                 <label className="text-[11px] font-bold uppercase">Assigned To</label>
@@ -1593,7 +1585,7 @@ export default function App() {
                     <button key={chip} type="button" onClick={()=>setOutgoingForm(f=>({...f, actionTaken: f.actionTaken ? f.actionTaken + ' ' + chip : chip}))} className="px-2.5 py-1 rounded-full bg-[#fbf8ee] border text-[11px] hover:bg-[#f3e9c8] cursor-pointer">{chip}</button>
                   ))}
                 </div>
-                <textarea value={outgoingForm.actionTaken} onChange={e=>setOutgoingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveOutgoing()}}} rows={6} className="mt-2 w-full px-3 py-3 rounded-xl border text-sm leading-relaxed min-h-[140px]" placeholder="Dispatch details, courier tracking, delivery confirmation...\n\nExample: Dispatched via courier and email. Delivered confirmation received. Awaiting Response within 14 days.\n\nEnter = new line, Ctrl+Enter = Save" />
+                <textarea value={outgoingForm.actionTaken} onChange={e=>setOutgoingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveOutgoing()}}} rows={4} className="mt-2 w-full px-3 py-2 rounded-xl border text-sm leading-relaxed" placeholder="Dispatch details..." />
               </div>
               <div>
                 <label className="text-[11px] font-bold uppercase">Assigned To</label>
