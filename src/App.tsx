@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 
 // --- Version Constants ---
 const APP_VERSION = "2.2.7";
-const LAST_UPDATE = "2026-10-05";
+const LAST_UPDATE = "2026-10-06";
 const NEXT_VERSION = "2.3.0";
 
 // --- Types ---
@@ -302,6 +302,19 @@ export default function App() {
   const [isOnline] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+
+  // --- Status Badge Helper v2.3.1 - fixes blank page + wrapping ---
+  const getStatusBadge = (status: string) => {
+    const base = "inline-flex whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-bold border";
+    if (status === "Urgent") return `${base} bg-red-100 text-red-800 border-red-200`;
+    if (status === "Pending") return `${base} bg-amber-100 text-amber-800 border-amber-200`;
+    if (status === "In Progress") return `${base} bg-blue-100 text-blue-800 border-blue-200`;
+    if (status === "Closed") return `${base} bg-green-100 text-green-800 border-green-200`;
+    if (status === "Forwarded") return `${base} bg-purple-100 text-purple-800 border-purple-200`;
+    if (status === "Filed") return `${base} bg-gray-100 text-gray-700 border-gray-200`;
+    return `${base} bg-[#0f2a44] text-white border-[#0f2a44]`;
+  };
 
   // --- Audit Logger ---
   const logAudit = (action: string, details: string) => {
@@ -1174,15 +1187,7 @@ export default function App() {
                           <div className="line-clamp-2 text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2">{r.actionTaken}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-bold border ${
-                            r.status === 'Urgent' ? 'bg-red-100 text-red-800 border-red-200' :
-                            r.status === 'Pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                            r.status === 'In Progress' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                            r.status === 'Closed' ? 'bg-green-100 text-green-800 border-green-200' :
-                            r.status === 'Forwarded' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                            r.status === 'Filed' ? 'bg-gray-100 text-gray-700 border-gray-300' :
-                            'bg-[#0f2a44] text-white border-[#0f2a44]'
-                          }`}>{r.status}</span>
+                          <span className={getStatusBadge(r.status)}>{r.status}</span>
                         </td>
                         <td className="px-4 py-3">{r.assignedTo}</td>
                         <td className="px-4 py-3 text-right">
@@ -1277,15 +1282,7 @@ export default function App() {
                           <div className="line-clamp-2 text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2">{r.actionTaken}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-bold border ${
-                            r.status === 'Urgent' ? 'bg-red-100 text-red-800 border-red-200' :
-                            r.status === 'Pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                            r.status === 'In Progress' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                            r.status === 'Closed' ? 'bg-green-100 text-green-800 border-green-200' :
-                            r.status === 'Forwarded' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                            r.status === 'Filed' ? 'bg-gray-100 text-gray-700 border-gray-300' :
-                            'bg-[#0f2a44] text-white border-[#0f2a44]'
-                          }`}>{r.status}</span>
+                          <span className={getStatusBadge(r.status)}>{r.status}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1.5">
@@ -1319,7 +1316,7 @@ export default function App() {
                     <div className="flex gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#0f2a44] text-white flex items-center justify-center font-bold text-sm">{o.avatar}</div>
                       <div>
-                        <div className="font-bold text-[#0f2a44] text-[14px]">{o.name} {o.id===currentOfficer.id && <span className="text-[10px] bg-[#c9a84c] text-[#0f2a44] px-2 py-0.5 rounded-full ml-1">YOU</span>}</div>
+                        <div className="font-bold text-[#0f2a44] text-[14px]">{o.name} {currentOfficer && o.id===currentOfficer.id && <span className="text-[10px] bg-[#c9a84c] text-[#0f2a44] px-2 py-0.5 rounded-full ml-1">YOU</span>}</div>
                         <div className="text-[11px] text-gray-600">{o.role} • {o.staffId}</div>
                         <div className="flex gap-1 mt-2">
                           {o.canManageOfficers && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0f2a44] text-white">Clerk Admin</span>}
