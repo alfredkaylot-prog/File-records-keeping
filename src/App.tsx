@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 
 // --- Version Constants ---
-const APP_VERSION = "2.2.8";
+const APP_VERSION = "2.2.7";
 const LAST_UPDATE = "2026-10-05";
 const NEXT_VERSION = "2.3.0";
 
@@ -231,6 +231,8 @@ export default function App() {
   const [filterIncomingStatus, setFilterIncomingStatus] = useState("All");
   const [filterOutgoingStatus, setFilterOutgoingStatus] = useState("All");
   const [activeTab, setActiveTab] = useState<"incoming" | "outgoing" | "officers" | "categories" | "audit" | "settings">("incoming");
+  // --- Action Taken expand fix v2.2.9 ---
+  const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
 
   // --- Modals ---
   const [showIncomingModal, setShowIncomingModal] = useState(false);
@@ -356,15 +358,6 @@ export default function App() {
         const parsed = JSON.parse(cat);
         if (parsed && parsed.incoming) setCategories(parsed);
       }
-      // FIX: Restore login session on refresh - v2.2.8
-      const sess = localStorage.getItem("cco_session_v2");
-      if (sess) {
-        const parsedSess = JSON.parse(sess);
-        if (parsedSess && parsedSess.id) {
-          setCurrentOfficer(parsedSess);
-          setSelectedLoginId(parsedSess.id);
-        }
-      }
     } catch (e) {
       console.warn("Load failed", e);
     }
@@ -386,14 +379,6 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("cco_categories_v2", JSON.stringify(categories));
   }, [categories]);
-  // FIX v2.2.8: Persist login session to survive refresh on GitHub Pages
-  useEffect(() => {
-    if (currentOfficer) {
-      localStorage.setItem("cco_session_v2", JSON.stringify(currentOfficer));
-    } else {
-      localStorage.removeItem("cco_session_v2");
-    }
-  }, [currentOfficer]);
 
   // --- ENTER KEY FIX - global listener for login ---
   useEffect(() => {
@@ -1187,8 +1172,19 @@ export default function App() {
                           <div className="text-[11px] text-gray-500">{r.date} • {r.category}</div>
                         </td>
                         <td className="px-4 py-3">{truncate(r.senderOrRecipient, 28)}</td>
-                        <td className="px-4 py-3 max-w-[260px]">
-                          <div className="line-clamp-2 text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2">{r.actionTaken}</div>
+                        <td className="px-4 py-3 min-w-[320px] max-w-[420px]">
+                          <div 
+                            onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)}
+                            className={`text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2.5 cursor-pointer hover:bg-[#f3e9c8] transition-all ${expandedActionId === r.id ? '' : 'line-clamp-2'}`}
+                            title="Click to expand/collapse"
+                          >
+                            {r.actionTaken || <span className="text-gray-400 italic">No action yet - click Edit</span>}
+                          </div>
+                          {r.actionTaken && r.actionTaken.length > 80 && (
+                            <button type="button" onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)} className="text-[10px] text-[#0f2a44] underline mt-1 hover:text-[#c9a84c] cursor-pointer">
+                              {expandedActionId === r.id ? 'Show less ▲' : 'Show full ▼'}
+                            </button>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span className="px-2.5 py-1 rounded-full bg-[#0f2a44] text-white text-[10px] font-bold">{r.status}</span>
@@ -1282,8 +1278,19 @@ export default function App() {
                           <div className="text-[11px] text-gray-500">{r.date} • {r.category}</div>
                         </td>
                         <td className="px-4 py-3">{truncate(r.senderOrRecipient, 28)}</td>
-                        <td className="px-4 py-3 max-w-[260px]">
-                          <div className="line-clamp-2 text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2">{r.actionTaken}</div>
+                        <td className="px-4 py-3 min-w-[320px] max-w-[420px]">
+                          <div 
+                            onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)}
+                            className={`text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2.5 cursor-pointer hover:bg-[#f3e9c8] transition-all ${expandedActionId === r.id ? '' : 'line-clamp-2'}`}
+                            title="Click to expand/collapse"
+                          >
+                            {r.actionTaken || <span className="text-gray-400 italic">No action yet</span>}
+                          </div>
+                          {r.actionTaken && r.actionTaken.length > 80 && (
+                            <button type="button" onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)} className="text-[10px] text-[#0f2a44] underline mt-1 hover:text-[#c9a84c] cursor-pointer">
+                              {expandedActionId === r.id ? 'Show less ▲' : 'Show full ▼'}
+                            </button>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span className="px-2.5 py-1 rounded-full bg-[#0f2a44] text-white text-[10px] font-bold">{r.status}</span>
@@ -1521,7 +1528,7 @@ export default function App() {
                     <button key={chip} type="button" onClick={()=>setIncomingForm(f=>({...f, actionTaken: f.actionTaken ? f.actionTaken + (f.actionTaken.endsWith('.')||f.actionTaken.endsWith(' ') ? ' ' : '. ') + chip : chip}))} className="px-2.5 py-1 rounded-full bg-[#fbf8ee] border text-[11px] hover:bg-[#f3e9c8] cursor-pointer">{chip}</button>
                   ))}
                 </div>
-                <textarea value={incomingForm.actionTaken} onChange={e=>setIncomingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveIncoming()}}} rows={4} className="mt-2 w-full px-3 py-2 rounded-xl border text-sm leading-relaxed focus:outline-none focus:border-[#c9a84c]" placeholder="Describe actions taken... Enter for new line, Ctrl+Enter to save" />
+                <textarea value={incomingForm.actionTaken} onChange={e=>setIncomingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveIncoming()}}} rows={6} className="mt-2 w-full px-3 py-3 rounded-xl border text-sm leading-relaxed focus:outline-none focus:border-[#c9a84c] min-h-[140px]" placeholder="Describe full actions taken on this file... Example: Received and logged. Forwarded to CCO for review. Document verified. Pending Director approval.\n\nEnter = new line, Ctrl+Enter = Save" />
               </div>
               <div>
                 <label className="text-[11px] font-bold uppercase">Assigned To</label>
@@ -1586,7 +1593,7 @@ export default function App() {
                     <button key={chip} type="button" onClick={()=>setOutgoingForm(f=>({...f, actionTaken: f.actionTaken ? f.actionTaken + ' ' + chip : chip}))} className="px-2.5 py-1 rounded-full bg-[#fbf8ee] border text-[11px] hover:bg-[#f3e9c8] cursor-pointer">{chip}</button>
                   ))}
                 </div>
-                <textarea value={outgoingForm.actionTaken} onChange={e=>setOutgoingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveOutgoing()}}} rows={4} className="mt-2 w-full px-3 py-2 rounded-xl border text-sm leading-relaxed" placeholder="Dispatch details..." />
+                <textarea value={outgoingForm.actionTaken} onChange={e=>setOutgoingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveOutgoing()}}} rows={6} className="mt-2 w-full px-3 py-3 rounded-xl border text-sm leading-relaxed min-h-[140px]" placeholder="Dispatch details, courier tracking, delivery confirmation...\n\nExample: Dispatched via courier and email. Delivered confirmation received. Awaiting Response within 14 days.\n\nEnter = new line, Ctrl+Enter = Save" />
               </div>
               <div>
                 <label className="text-[11px] font-bold uppercase">Assigned To</label>
