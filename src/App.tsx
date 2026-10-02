@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 
 // --- Version Constants ---
-const APP_VERSION = "2.3.7";
+const APP_VERSION = "2.3.8";
 const LAST_UPDATE = "2026-10-06";
-const APP_VERSION = "2.3.7";
-const LAST_UPDATE = "2026-10-06"; // clean build - no next version
+const NEXT_VERSION = "2.3.8";
 
 // --- Types ---
 type OfficerRole = "Registry Clerk" | "Senior Officer" | "Officer" | "CCO";
@@ -232,7 +231,6 @@ export default function App() {
   const [filterIncomingStatus, setFilterIncomingStatus] = useState("All");
   const [filterOutgoingStatus, setFilterOutgoingStatus] = useState("All");
   const [activeTab, setActiveTab] = useState<"incoming" | "outgoing" | "officers" | "categories" | "audit" | "settings">("incoming");
-  const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
 
   // --- Modals ---
   const [showIncomingModal, setShowIncomingModal] = useState(false);
@@ -296,20 +294,14 @@ export default function App() {
   const [newCatValues, setNewCatValues] = useState<Record<keyof CategoriesState, string>>({ incoming: "", outgoing: "", statuses: "" });
 
   // update center
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [checkResult, setCheckResult] = useState<string>("");
+  const [updating, setUpdating] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState(0);
   const [isOnline] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const getStatusBadge = (status: string) => {
-    const base = "inline-flex whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-bold border";
-    if (status === "Urgent") return `${base} bg-red-100 text-red-800 border-red-200`;
-    if (status === "Pending") return `${base} bg-amber-100 text-amber-800 border-amber-200`;
-    if (status === "In Progress") return `${base} bg-blue-100 text-blue-800 border-blue-200`;
-    if (status === "Closed") return `${base} bg-green-100 text-green-800 border-green-200`;
-    if (status === "Forwarded") return `${base} bg-purple-100 text-purple-800 border-purple-200`;
-    if (status === "Filed") return `${base} bg-gray-100 text-gray-700 border-gray-200`;
-    return `${base} bg-[#0f2a44] text-white border-[#0f2a44]`;
-  };
 
   // --- Audit Logger ---
   const logAudit = (action: string, details: string) => {
@@ -335,6 +327,7 @@ export default function App() {
       if (inc) {
         const parsed = JSON.parse(inc);
         if (Array.isArray(parsed)) {
+          // migrate actionTaken = status if missing
           const migrated = parsed.map((r: any) => ({
             ...r,
             actionTaken: r.actionTaken || r.status || "",
@@ -362,26 +355,6 @@ export default function App() {
       if (cat) {
         const parsed = JSON.parse(cat);
         if (parsed && parsed.incoming) setCategories(parsed);
-      }
-      // FIX v2.3.3: Restore session by ID only (prevents blank page on refresh)
-      const sessId = localStorage.getItem("cco_session_id_v2");
-      const sessObj = localStorage.getItem("cco_session_v2");
-      let restoreId = sessId;
-      if (!restoreId && sessObj) {
-        try { const p = JSON.parse(sessObj); restoreId = p?.id || null; } catch {}
-      }
-      if (restoreId) {
-        setSelectedLoginId(restoreId);
-        try {
-          const offRaw = localStorage.getItem("cco_officers_v2");
-          let officerList = DEFAULT_OFFICERS;
-          if (offRaw) {
-            const parsed = JSON.parse(offRaw);
-            if (Array.isArray(parsed) && parsed.length > 0) officerList = parsed;
-          }
-          const found = officerList.find((o:any) => o.id === restoreId);
-          if (found) setCurrentOfficer(found);
-        } catch {}
       }
     } catch (e) {
       console.warn("Load failed", e);
@@ -874,6 +847,34 @@ export default function App() {
     logAudit("Reset", `Full reset by ${currentOfficer?.name}`);
   };
 
+  // --- Update Checker ---
+  const checkForUpdates = () => {
+    setCheckingUpdates(true);
+    setCheckResult("");
+    setTimeout(() => {
+      setCheckingUpdates(false);
+      setUpdateAvailable(true);
+      setCheckResult(`Update available: v${NEXT_VERSION} - Includes enhanced audit encryption and bulk export. Current: v${APP_VERSION}`);
+    }, 1200);
+  };
+
+  const performUpdate = () => {
+    setUpdating(true);
+    setUpdateProgress(0);
+    const interval = setInterval(() => {
+      setUpdateProgress((p) => {
+        if (p >= 100) {
+          clearInterval(interval);
+          setUpdating(false);
+          setUpdateAvailable(false);
+          setCheckResult(`Successfully updated to v${NEXT_VERSION} (simulated)`);
+          logAudit("Update", `Updated to v${NEXT_VERSION} by ${currentOfficer?.name}`);
+          return 100;
+        }
+        return p + 10;
+      });
+    }, 250);
+  };
 
   // --- Render: Login ---
   if (!currentOfficer) {
@@ -888,7 +889,7 @@ export default function App() {
               <div className="text-[11px] text-white/70 -mt-0.5">Secure Compliance Management</div>
             </div>
           </div>
-          <div className="text-[10px] text-white/50 hidden md:block">LAST UPDATE {LAST_UPDATE}</div>
+          <div className="text-[10px] text-white/50 hidden md:block">v{APP_VERSION} • {LAST_UPDATE}</div>
         </header>
 
         <div className="flex-1 flex items-center justify-center p-4 md:p-8">
@@ -1169,22 +1170,11 @@ export default function App() {
                           <div className="text-[11px] text-gray-500">{r.date} • {r.category}</div>
                         </td>
                         <td className="px-4 py-3">{truncate(r.senderOrRecipient, 28)}</td>
-                        <td className="px-4 py-3 min-w-[320px] max-w-[420px]">
-                          <div 
-                            onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)}
-                            className={`text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2.5 cursor-pointer hover:bg-[#f3e9c8] transition-all ${expandedActionId === r.id ? '' : 'line-clamp-2'}`}
-                            title="Click to expand/collapse"
-                          >
-                            {r.actionTaken || <span className="text-gray-400 italic">No action yet - click Edit</span>}
-                          </div>
-                          {r.actionTaken && r.actionTaken.length > 80 && (
-                            <button type="button" onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)} className="text-[10px] text-[#0f2a44] underline mt-1 hover:text-[#c9a84c] cursor-pointer">
-                              {expandedActionId === r.id ? 'Show less ▲' : 'Show full ▼'}
-                            </button>
-                          )}
+                        <td className="px-4 py-3 max-w-[260px]">
+                          <div className="line-clamp-2 text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2">{r.actionTaken}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={getStatusBadge(r.status)}>{r.status}</span>
+                          <span className="px-2.5 py-1 rounded-full bg-[#0f2a44] text-white text-[10px] font-bold">{r.status}</span>
                         </td>
                         <td className="px-4 py-3">{r.assignedTo}</td>
                         <td className="px-4 py-3 text-right">
@@ -1275,22 +1265,11 @@ export default function App() {
                           <div className="text-[11px] text-gray-500">{r.date} • {r.category}</div>
                         </td>
                         <td className="px-4 py-3">{truncate(r.senderOrRecipient, 28)}</td>
-                        <td className="px-4 py-3 min-w-[320px] max-w-[420px]">
-                          <div 
-                            onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)}
-                            className={`text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2.5 cursor-pointer hover:bg-[#f3e9c8] transition-all ${expandedActionId === r.id ? '' : 'line-clamp-2'}`}
-                            title="Click to expand/collapse"
-                          >
-                            {r.actionTaken || <span className="text-gray-400 italic">No action yet - click Edit</span>}
-                          </div>
-                          {r.actionTaken && r.actionTaken.length > 80 && (
-                            <button type="button" onClick={() => setExpandedActionId(expandedActionId === r.id ? null : r.id)} className="text-[10px] text-[#0f2a44] underline mt-1 hover:text-[#c9a84c] cursor-pointer">
-                              {expandedActionId === r.id ? 'Show less ▲' : 'Show full ▼'}
-                            </button>
-                          )}
+                        <td className="px-4 py-3 max-w-[260px]">
+                          <div className="line-clamp-2 text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2">{r.actionTaken}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={getStatusBadge(r.status)}>{r.status}</span>
+                          <span className="px-2.5 py-1 rounded-full bg-[#0f2a44] text-white text-[10px] font-bold">{r.status}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1.5">
@@ -1324,7 +1303,7 @@ export default function App() {
                     <div className="flex gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#0f2a44] text-white flex items-center justify-center font-bold text-sm">{o.avatar}</div>
                       <div>
-                        <div className="font-bold text-[#0f2a44] text-[14px]">{o.name} {currentOfficer && o.id===currentOfficer.id && <span className="text-[10px] bg-[#c9a84c] text-[#0f2a44] px-2 py-0.5 rounded-full ml-1">YOU</span>}</div>
+                        <div className="font-bold text-[#0f2a44] text-[14px]">{o.name} {o.id===currentOfficer.id && <span className="text-[10px] bg-[#c9a84c] text-[#0f2a44] px-2 py-0.5 rounded-full ml-1">YOU</span>}</div>
                         <div className="text-[11px] text-gray-600">{o.role} • {o.staffId}</div>
                         <div className="flex gap-1 mt-2">
                           {o.canManageOfficers && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0f2a44] text-white">Clerk Admin</span>}
@@ -1417,7 +1396,7 @@ export default function App() {
 
         {activeTab === "settings" && (
           <div className="space-y-6 max-w-[900px]">
-            <h2 className="text-[20px] font-bold">Settings</h2>
+            <h2 className="text-[20px] font-bold">Settings & Update Center</h2>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-white rounded-2xl border p-5">
@@ -1425,7 +1404,6 @@ export default function App() {
                 <div className="mt-3 space-y-2 text-[12px]">
                   <div className="flex justify-between"><span className="text-gray-600">Version</span><b>{APP_VERSION}</b></div>
                   <div className="flex justify-between"><span className="text-gray-600">Last Update</span><b>{LAST_UPDATE}</b></div>
-                  <div className="flex justify-between"><span className="text-gray-600"></span><b></b></div>
                   <div className="flex justify-between"><span className="text-gray-600">Retention</span><b>{settings.retentionDays} days</b></div>
                   <div className="flex justify-between"><span className="text-gray-600">Online</span><b className={isOnline ? "text-green-600":"text-red-600"}>{isOnline ? "Yes" : "No"}</b></div>
                 </div>
@@ -1446,6 +1424,12 @@ export default function App() {
             </div>
 
             
+              )}
+              <div className="mt-4 text-[11px] text-gray-600 leading-relaxed">
+                Changelog v{APP_VERSION}: Enter key support on login and all modals + guaranteed working delete with high z-index modal. No window.confirm used - sandboxed iframe safe.
+              </div>
+            </div>
+
             <div className="bg-[#0f2a44] text-white rounded-2xl p-5">
               <div className="text-[11px] tracking-widest text-[#c9a84c] font-bold">SECURITY</div>
               <div className="text-[13px] mt-2 leading-relaxed text-white/80">
@@ -1502,7 +1486,7 @@ export default function App() {
                     <button key={chip} type="button" onClick={()=>setIncomingForm(f=>({...f, actionTaken: f.actionTaken ? f.actionTaken + (f.actionTaken.endsWith('.')||f.actionTaken.endsWith(' ') ? ' ' : '. ') + chip : chip}))} className="px-2.5 py-1 rounded-full bg-[#fbf8ee] border text-[11px] hover:bg-[#f3e9c8] cursor-pointer">{chip}</button>
                   ))}
                 </div>
-                <textarea value={incomingForm.actionTaken} onChange={e=>setIncomingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveIncoming()}}} rows={6} className="mt-2 w-full px-3 py-3 rounded-xl border text-sm leading-relaxed focus:outline-none focus:border-[#c9a84c] min-h-[140px]" placeholder="Describe full actions taken... Example: Received and logged. Forwarded to CCO for review. Document verified. Pending Director approval.\n\nEnter = new line, Ctrl+Enter = Save" />
+                <textarea value={incomingForm.actionTaken} onChange={e=>setIncomingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveIncoming()}}} rows={4} className="mt-2 w-full px-3 py-2 rounded-xl border text-sm leading-relaxed focus:outline-none focus:border-[#c9a84c]" placeholder="Describe actions taken... Enter for new line, Ctrl+Enter to save" />
               </div>
               <div>
                 <label className="text-[11px] font-bold uppercase">Assigned To</label>
@@ -1567,7 +1551,7 @@ export default function App() {
                     <button key={chip} type="button" onClick={()=>setOutgoingForm(f=>({...f, actionTaken: f.actionTaken ? f.actionTaken + ' ' + chip : chip}))} className="px-2.5 py-1 rounded-full bg-[#fbf8ee] border text-[11px] hover:bg-[#f3e9c8] cursor-pointer">{chip}</button>
                   ))}
                 </div>
-                <textarea value={outgoingForm.actionTaken} onChange={e=>setOutgoingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveOutgoing()}}} rows={6} className="mt-2 w-full px-3 py-3 rounded-xl border text-sm leading-relaxed min-h-[140px]" placeholder="Dispatch details, courier tracking, delivery confirmation...\n\nExample: Dispatched via courier and email. Delivered confirmation received. Awaiting Response within 14 days.\n\nEnter = new line, Ctrl+Enter = Save" />
+                <textarea value={outgoingForm.actionTaken} onChange={e=>setOutgoingForm(f=>({...f,actionTaken:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){e.preventDefault(); saveOutgoing()}}} rows={4} className="mt-2 w-full px-3 py-2 rounded-xl border text-sm leading-relaxed" placeholder="Dispatch details..." />
               </div>
               <div>
                 <label className="text-[11px] font-bold uppercase">Assigned To</label>
