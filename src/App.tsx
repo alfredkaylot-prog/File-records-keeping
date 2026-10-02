@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 
 // --- Version Constants ---
-const APP_VERSION = "2.3.8";
+const APP_VERSION = "2.3.9";
 const LAST_UPDATE = "2026-10-06";
 const NEXT_VERSION = "2.3.8";
 
@@ -1396,7 +1396,7 @@ export default function App() {
 
         {activeTab === "settings" && (
           <div className="space-y-6 max-w-[900px]">
-            <h2 className="text-[20px] font-bold">Settings & Update Center</h2>
+            <h2 className="text-[20px] font-bold">Settings</h2>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-white rounded-2xl border p-5">
@@ -1423,10 +1423,10 @@ export default function App() {
               </div>
             </div>
 
-            
-              )}
-              <div className="mt-4 text-[11px] text-gray-600 leading-relaxed">
-                Changelog v{APP_VERSION}: Enter key support on login and all modals + guaranteed working delete with high z-index modal. No window.confirm used - sandboxed iframe safe.
+            <div className="bg-white rounded-2xl border p-5">
+              <div className="font-bold text-[#0f2a44]">Changelog</div>
+              <div className="mt-3 text-[12px] text-gray-600 leading-relaxed">
+                Changelog v{APP_VERSION}: Enter key support on login and all modals + guaranteed working delete with high z-index modal. No window.confirm used.
               </div>
             </div>
 
