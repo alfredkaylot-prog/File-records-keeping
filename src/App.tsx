@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 
 // --- Version Constants ---
-const APP_VERSION = "2.3.9";
+const APP_VERSION = "2.4.0";
 const LAST_UPDATE = "2026-10-06";
-const NEXT_VERSION = "2.3.8";
 
 // --- Types ---
 type OfficerRole = "Registry Clerk" | "Senior Officer" | "Officer" | "CCO";
@@ -854,7 +853,7 @@ export default function App() {
     setTimeout(() => {
       setCheckingUpdates(false);
       setUpdateAvailable(true);
-      setCheckResult(`Update available: v${NEXT_VERSION} - Includes enhanced audit encryption and bulk export. Current: v${APP_VERSION}`);
+      setCheckResult(`Update available: v$ - Includes enhanced audit encryption and bulk export. Current: v${APP_VERSION}`);
     }, 1200);
   };
 
@@ -867,8 +866,8 @@ export default function App() {
           clearInterval(interval);
           setUpdating(false);
           setUpdateAvailable(false);
-          setCheckResult(`Successfully updated to v${NEXT_VERSION} (simulated)`);
-          logAudit("Update", `Updated to v${NEXT_VERSION} by ${currentOfficer?.name}`);
+          setCheckResult(`Successfully updated to v$ (simulated)`);
+          logAudit("Update", `Updated to v$ by ${currentOfficer?.name}`);
           return 100;
         }
         return p + 10;
@@ -889,7 +888,7 @@ export default function App() {
               <div className="text-[11px] text-white/70 -mt-0.5">Secure Compliance Management</div>
             </div>
           </div>
-          <div className="text-[10px] text-white/50 hidden md:block">v{APP_VERSION} • {LAST_UPDATE}</div>
+          <div className="text-[10px] text-white/50 hidden md:block">LAST UPDATE {LAST_UPDATE} • NEXT </div>
         </header>
 
         <div className="flex-1 flex items-center justify-center p-4 md:p-8">
@@ -1170,11 +1169,11 @@ export default function App() {
                           <div className="text-[11px] text-gray-500">{r.date} • {r.category}</div>
                         </td>
                         <td className="px-4 py-3">{truncate(r.senderOrRecipient, 28)}</td>
-                        <td className="px-4 py-3 max-w-[260px]">
-                          <div className="line-clamp-2 text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2">{r.actionTaken}</div>
+                        <td className="px-4 py-3 min-w-[280px] max-w-[380px]">
+                          <div className="text-[12px] leading-relaxed bg-[#f7f4ec] border border-[#e8e0c9] rounded-lg p-2.5 whitespace-pre-wrap break-words">{r.actionTaken}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="px-2.5 py-1 rounded-full bg-[#0f2a44] text-white text-[10px] font-bold">{r.status}</span>
+                          <span className={`inline-flex whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-bold ${r.status === 'Urgent' ? 'bg-red-600 text-white' : r.status === 'In Progress' ? 'bg-amber-400 text-[#0f2a44]' : r.status === 'Pending' ? 'bg-gray-200 text-gray-700' : 'bg-[#0f2a44] text-white'}`}>{r.status}</span>
                         </td>
                         <td className="px-4 py-3">{r.assignedTo}</td>
                         <td className="px-4 py-3 text-right">
@@ -1265,11 +1264,11 @@ export default function App() {
                           <div className="text-[11px] text-gray-500">{r.date} • {r.category}</div>
                         </td>
                         <td className="px-4 py-3">{truncate(r.senderOrRecipient, 28)}</td>
-                        <td className="px-4 py-3 max-w-[260px]">
-                          <div className="line-clamp-2 text-[11px] leading-relaxed bg-[#f7f4ec] border rounded-lg p-2">{r.actionTaken}</div>
+                        <td className="px-4 py-3 min-w-[280px] max-w-[380px]">
+                          <div className="text-[12px] leading-relaxed bg-[#f7f4ec] border border-[#e8e0c9] rounded-lg p-2.5 whitespace-pre-wrap break-words">{r.actionTaken}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="px-2.5 py-1 rounded-full bg-[#0f2a44] text-white text-[10px] font-bold">{r.status}</span>
+                          <span className={`inline-flex whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-bold ${r.status === 'Urgent' ? 'bg-red-600 text-white' : r.status === 'In Progress' ? 'bg-amber-400 text-[#0f2a44]' : r.status === 'Pending' ? 'bg-gray-200 text-gray-700' : 'bg-[#0f2a44] text-white'}`}>{r.status}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1.5">
@@ -1396,7 +1395,7 @@ export default function App() {
 
         {activeTab === "settings" && (
           <div className="space-y-6 max-w-[900px]">
-            <h2 className="text-[20px] font-bold">Settings</h2>
+            <h2 className="text-[20px] font-bold">Settings & Update Center</h2>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-white rounded-2xl border p-5">
@@ -1404,6 +1403,7 @@ export default function App() {
                 <div className="mt-3 space-y-2 text-[12px]">
                   <div className="flex justify-between"><span className="text-gray-600">Version</span><b>{APP_VERSION}</b></div>
                   <div className="flex justify-between"><span className="text-gray-600">Last Update</span><b>{LAST_UPDATE}</b></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Next Version</span><b></b></div>
                   <div className="flex justify-between"><span className="text-gray-600">Retention</span><b>{settings.retentionDays} days</b></div>
                   <div className="flex justify-between"><span className="text-gray-600">Online</span><b className={isOnline ? "text-green-600":"text-red-600"}>{isOnline ? "Yes" : "No"}</b></div>
                 </div>
@@ -1424,9 +1424,26 @@ export default function App() {
             </div>
 
             <div className="bg-white rounded-2xl border p-5">
-              <div className="font-bold text-[#0f2a44]">Changelog</div>
-              <div className="mt-3 text-[12px] text-gray-600 leading-relaxed">
-                Changelog v{APP_VERSION}: Enter key support on login and all modals + guaranteed working delete with high z-index modal. No window.confirm used.
+              <div className="font-bold text-[#0f2a44]">Update Center</div>
+              <div className="mt-3 flex flex-wrap gap-2 items-center">
+                <button type="button" onClick={checkForUpdates} disabled={checkingUpdates} className="h-9 px-5 rounded-full bg-[#c9a84c] text-[#0f2a44] text-[12px] font-bold hover:bg-[#d8bb6a] disabled:opacity-50 cursor-pointer">
+                  {checkingUpdates ? "Checking..." : "Check for Updates"}
+                </button>
+                {updateAvailable && !updating && (
+                  <button type="button" onClick={performUpdate} className="h-9 px-5 rounded-full bg-[#0f2a44] text-white text-[12px] font-bold cursor-pointer">Update to v</button>
+                )}
+              </div>
+              {checkResult && <div className="mt-3 text-[12px] p-3 rounded-xl bg-[#fbf8ee] border">{checkResult}</div>}
+              {updating && (
+                <div className="mt-4">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#0f2a44] transition-all" style={{width:`${updateProgress}%`}} />
+                  </div>
+                  <div className="text-[11px] text-gray-600 mt-1">{updateProgress}% installing...</div>
+                </div>
+              )}
+              <div className="mt-4 text-[11px] text-gray-600 leading-relaxed">
+                Changelog v{APP_VERSION}: Enter key support on login and all modals + guaranteed working delete with high z-index modal. No window.confirm used - sandboxed iframe safe.
               </div>
             </div>
 
