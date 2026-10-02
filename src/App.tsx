@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 
 // --- Version Constants ---
-const APP_VERSION = "2.4.0";
+const APP_VERSION = "2.4.1";
 const LAST_UPDATE = "2026-10-06";
+const NEXT_VERSION = "2.4.1";
 
 // --- Types ---
 type OfficerRole = "Registry Clerk" | "Senior Officer" | "Officer" | "CCO";
@@ -293,11 +294,6 @@ export default function App() {
   const [newCatValues, setNewCatValues] = useState<Record<keyof CategoriesState, string>>({ incoming: "", outgoing: "", statuses: "" });
 
   // update center
-  const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [checkingUpdates, setCheckingUpdates] = useState(false);
-  const [checkResult, setCheckResult] = useState<string>("");
-  const [updating, setUpdating] = useState(false);
-  const [updateProgress, setUpdateProgress] = useState(0);
   const [isOnline] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -846,34 +842,6 @@ export default function App() {
     logAudit("Reset", `Full reset by ${currentOfficer?.name}`);
   };
 
-  // --- Update Checker ---
-  const checkForUpdates = () => {
-    setCheckingUpdates(true);
-    setCheckResult("");
-    setTimeout(() => {
-      setCheckingUpdates(false);
-      setUpdateAvailable(true);
-      setCheckResult(`Update available: v$ - Includes enhanced audit encryption and bulk export. Current: v${APP_VERSION}`);
-    }, 1200);
-  };
-
-  const performUpdate = () => {
-    setUpdating(true);
-    setUpdateProgress(0);
-    const interval = setInterval(() => {
-      setUpdateProgress((p) => {
-        if (p >= 100) {
-          clearInterval(interval);
-          setUpdating(false);
-          setUpdateAvailable(false);
-          setCheckResult(`Successfully updated to v$ (simulated)`);
-          logAudit("Update", `Updated to v$ by ${currentOfficer?.name}`);
-          return 100;
-        }
-        return p + 10;
-      });
-    }, 250);
-  };
 
   // --- Render: Login ---
   if (!currentOfficer) {
@@ -1395,7 +1363,7 @@ export default function App() {
 
         {activeTab === "settings" && (
           <div className="space-y-6 max-w-[900px]">
-            <h2 className="text-[20px] font-bold">Settings & Update Center</h2>
+            <h2 className="text-[20px] font-bold">Settings</h2>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-white rounded-2xl border p-5">
@@ -1403,7 +1371,7 @@ export default function App() {
                 <div className="mt-3 space-y-2 text-[12px]">
                   <div className="flex justify-between"><span className="text-gray-600">Version</span><b>{APP_VERSION}</b></div>
                   <div className="flex justify-between"><span className="text-gray-600">Last Update</span><b>{LAST_UPDATE}</b></div>
-                  <div className="flex justify-between"><span className="text-gray-600">Next Version</span><b></b></div>
+                  
                   <div className="flex justify-between"><span className="text-gray-600">Retention</span><b>{settings.retentionDays} days</b></div>
                   <div className="flex justify-between"><span className="text-gray-600">Online</span><b className={isOnline ? "text-green-600":"text-red-600"}>{isOnline ? "Yes" : "No"}</b></div>
                 </div>
@@ -1424,26 +1392,9 @@ export default function App() {
             </div>
 
             <div className="bg-white rounded-2xl border p-5">
-              <div className="font-bold text-[#0f2a44]">Update Center</div>
-              <div className="mt-3 flex flex-wrap gap-2 items-center">
-                <button type="button" onClick={checkForUpdates} disabled={checkingUpdates} className="h-9 px-5 rounded-full bg-[#c9a84c] text-[#0f2a44] text-[12px] font-bold hover:bg-[#d8bb6a] disabled:opacity-50 cursor-pointer">
-                  {checkingUpdates ? "Checking..." : "Check for Updates"}
-                </button>
-                {updateAvailable && !updating && (
-                  <button type="button" onClick={performUpdate} className="h-9 px-5 rounded-full bg-[#0f2a44] text-white text-[12px] font-bold cursor-pointer">Update to v</button>
-                )}
-              </div>
-              {checkResult && <div className="mt-3 text-[12px] p-3 rounded-xl bg-[#fbf8ee] border">{checkResult}</div>}
-              {updating && (
-                <div className="mt-4">
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#0f2a44] transition-all" style={{width:`${updateProgress}%`}} />
-                  </div>
-                  <div className="text-[11px] text-gray-600 mt-1">{updateProgress}% installing...</div>
-                </div>
-              )}
-              <div className="mt-4 text-[11px] text-gray-600 leading-relaxed">
-                Changelog v{APP_VERSION}: Enter key support on login and all modals + guaranteed working delete with high z-index modal. No window.confirm used - sandboxed iframe safe.
+              <div className="font-bold text-[#0f2a44]">Changelog</div>
+              <div className="mt-3 text-[12px] text-gray-600 leading-relaxed">
+                v{APP_VERSION}: Writable Action Taken fixed (full text visible), Status badges fixed (no cut-off), Enter key support, secure delete modal. Table scrollable.
               </div>
             </div>
 
